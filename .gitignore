@@ -1,0 +1,32 @@
+# Large local datasets
+data/
+
+# Generated figures and analysis outputs
+*.png
+*.jpg
+*.jpeg
+*.tif
+*.tiff
+*.pdf
+outputs/
+results/
+figures/
+
+# Python cache and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Jupyter and editor metadata
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# OS metadata
+.DS_Store
+Thumbs.db
