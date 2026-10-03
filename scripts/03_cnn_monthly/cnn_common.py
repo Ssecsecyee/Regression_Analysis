@@ -129,6 +129,83 @@ def decode_packed_array(dataset: h5py.Dataset, raw: np.ndarray) -> np.ndarray:
     return array * float(scale) + float(offset)
 
 
+def normalize_array(values: np.ndarray, mean: float, std: float) -> np.ndarray:
+    """CNN 입력용 z-score normalization을 적용한다.
+
+    NaN은 여기서 채우지 않는다. 결측 처리 전략은 normalization 이후에 적용한다.
+    """
+    if std == 0:
+        raise ValueError("Cannot normalize with std=0.")
+    return (values.astype("float64", copy=False) - float(mean)) / float(std)
+
+
+def fill_nan_after_normalization(values: np.ndarray, fill_value: float = 0.0) -> np.ndarray:
+    """정규화된 CNN 입력에서 NaN을 지정값으로 채운다.
+
+    fill_value=0은 z-score 공간에서 train 평균값을 의미한다.
+    raw 물리값 0과는 다른 의미다.
+    """
+    return np.where(np.isfinite(values), values, fill_value)
+
+
+def fill_nan_with_3x3_stat(
+    values: np.ndarray,
+    valid_domain: np.ndarray | None = None,
+    min_valid_count: int = 3,
+    method: str = "median",
+) -> np.ndarray:
+    """2-D 배열의 NaN을 주변 3x3 valid 통계값으로 1회 보간한다.
+
+    이 함수는 tos 결측 보간 후보 실험용이다.
+    - finite 값만 이웃 후보로 사용한다.
+    - valid_domain이 주어지면 해당 영역 안의 값만 이웃 후보로 사용한다.
+    - 주변 valid 후보 수가 min_valid_count보다 적으면 NaN으로 남긴다.
+    - method는 "median" 또는 "mean"을 지원한다.
+
+    반환값은 원본 배열을 수정하지 않는 새 배열이다.
+    """
+    if values.ndim != 2:
+        raise ValueError("fill_nan_with_3x3_stat expects a 2-D array.")
+    if method not in {"median", "mean"}:
+        raise ValueError("method must be 'median' or 'mean'.")
+
+    source = values.astype("float64", copy=True)
+    if valid_domain is None:
+        domain = np.ones(source.shape, dtype=bool)
+    else:
+        domain = valid_domain.astype(bool)
+        if domain.shape != source.shape:
+            raise ValueError("valid_domain shape must match values shape.")
+
+    finite = np.isfinite(source) & domain
+    filled = source.copy()
+
+    # 448x304 월별 격자에서 3x3 창만 다루므로 명시적 루프가 충분히 단순하고 안전하다.
+    candidate_y, candidate_x = np.where(np.isnan(filled) & domain)
+    for y_idx, x_idx in zip(candidate_y, candidate_x):
+        y0 = max(0, y_idx - 1)
+        y1 = min(source.shape[0], y_idx + 2)
+        x0 = max(0, x_idx - 1)
+        x1 = min(source.shape[1], x_idx + 2)
+
+        window = source[y0:y1, x0:x1]
+        window_domain = domain[y0:y1, x0:x1]
+        candidates = window[np.isfinite(window) & window_domain]
+        if candidates.size < min_valid_count:
+            continue
+        if method == "median":
+            filled[y_idx, x_idx] = float(np.median(candidates))
+        else:
+            filled[y_idx, x_idx] = float(np.mean(candidates))
+
+    return filled
+
+
+def make_missing_mask(values: np.ndarray) -> np.ndarray:
+    """입력 변수의 결측 위치를 0/1 mask로 반환한다."""
+    return np.isnan(values).astype("float32")
+
+
 def dataset_metadata(dataset: h5py.Dataset, file_path: Path) -> dict[str, Any]:
     """NetCDF 변수 dataset의 기본 metadata를 dict로 정리한다."""
     return {

@@ -213,6 +213,7 @@ CNN 학습 전에 각 변수 파일별 전처리 검증 스크립트를 분리�
 03_build_cnn_normalization_stats.py
 04_validate_cnn_masks.py
 05_prepare_cnn_dataset_index.py
+06_validate_tos_fill_strategies.py
 ```
 
 각 파일 목적은 다음과 같다.
@@ -224,6 +225,7 @@ CNN 학습 전에 각 변수 파일별 전처리 검증 스크립트를 분리�
 | `03_build_cnn_normalization_stats.py` | train 기간 기준 변수별 normalization 통계 계산 |
 | `04_validate_cnn_masks.py` | land/ocean/active mask shape, target/loss 적용 가능 영역 확인 |
 | `05_prepare_cnn_dataset_index.py` | train/val/test 월별 sample index와 입력/타깃 파일 매핑 생성 |
+| `06_validate_tos_fill_strategies.py` | `tos` 결측 처리 후보인 정규화 후 0 채움과 3x3 valid ocean 보간 비교 |
 
 각 전처리 스크립트는 반드시 다음을 산출해야 한다.
 
@@ -279,6 +281,15 @@ CNN 입력 텐서에는 `NaN`이 들어갈 수 없다. 따라서 결측 처리 �
 특히 `tos`는 해빙, 육지, 마스크 조건에 따라 결측이 광범위하게 나타날 수 있으므로 단순
 `np.nanmean` 기반 통계와 단순 0 채움은 편향을 만들 수 있다.
 
+중요한 원칙은 다음과 같다.
+
+```text
+raw tos NaN -> raw 0 K 대체는 금지한다.
+```
+
+0 K는 물리적으로 불가능한 해수면 온도이며, 모델에 강한 가짜 신호를 넣는다. 다만 z-score
+정규화 이후의 0은 train 평균을 의미하므로, raw 0과 의미가 다르다.
+
 전처리 검증 후 다음 후보를 비교한다.
 
 ```text
@@ -288,7 +299,56 @@ CNN 입력 텐서에는 `NaN`이 들어갈 수 없다. 따라서 결측 처리 �
 4. 특정 변수의 결측 영역을 loss/mask와 분리해서 추적
 ```
 
-1차 원칙은 다음과 같다.
+`tos`는 모델 영향도가 큰 변수이므로 별도 전략을 둔다.
+
+### 9.1 1차 CNN: zero-fill baseline
+
+```text
+1. tos를 train 통계로 normalization
+2. normalization 후 NaN을 0으로 채움
+3. tos_missing 또는 tos_valid 정보를 별도 mask로 보관
+4. 보고서에 tos 결측 비율 명시
+```
+
+이때 0은 raw 0 K가 아니라 normalized 평균값이다.
+
+### 9.2 2차 CNN: 3x3 valid ocean median interpolation
+
+```text
+1. raw tos NaN 위치 확인
+2. 같은 시점의 3x3 주변 valid ocean tos median으로 결측 보간
+3. 3x3 창 안에 valid ocean 픽셀이 최소 3개 이상일 때만 보간
+4. valid ocean 픽셀이 3개 미만이면 보간하지 않고 NaN 유지
+5. 보간 후 train 통계로 normalization
+6. 그래도 남은 NaN은 normalization 후 0으로 채움
+7. tos_missing mask는 계속 유지
+8. 1차 zero-fill baseline과 같은 test split에서 성능 비교
+```
+
+3x3 보간은 육지나 invalid pixel을 통계값 계산에 넣지 않는다. 같은 시점에서 `tos`가 실제로
+존재하는 주변 ocean pixel만 사용한다. 평균이 아니라 median을 기본값으로 둔다. 결측 비율이
+높은 변수에서 mean은 경계값을 과도하게 확산시킬 수 있고, max는 따뜻한 값으로 과대 보간될
+위험이 크기 때문이다.
+
+### 9.3 3차 CNN: strategy comparison
+
+```text
+1. zero-fill baseline
+2. 3x3 valid ocean median interpolation
+3. 필요 시 active/ocean 영역별 성능 비교
+```
+
+비교 대상은 전체 test 성능뿐 아니라 다음 영역별 성능이다.
+
+```text
+ocean
+active_union
+monthly active mask
+tos missing area
+tos valid area
+```
+
+현재 1차 원칙은 다음과 같다.
 
 ```text
 normalization 통계:
@@ -466,11 +526,12 @@ environment metadata
 03_build_cnn_normalization_stats.py
 04_validate_cnn_masks.py
 05_prepare_cnn_dataset_index.py
-06_train_cnn_baseline.py
-07_evaluate_cnn_model.py
-08_visualize_cnn_predictions.py
-09_train_cnn_ensemble.py
-10_write_cnn_validation_report.py
+06_validate_tos_fill_strategies.py
+07_train_cnn_baseline.py
+08_evaluate_cnn_model.py
+09_visualize_cnn_predictions.py
+10_train_cnn_ensemble.py
+11_write_cnn_validation_report.py
 ```
 
 각 스크립트 목적은 다음과 같다.
@@ -482,11 +543,12 @@ environment metadata
 | `03_build_cnn_normalization_stats.py` | train 기준 normalization 통계 생성 |
 | `04_validate_cnn_masks.py` | 학습/평가 mask 검증 |
 | `05_prepare_cnn_dataset_index.py` | CNN sample index와 split metadata 생성 |
-| `06_train_cnn_baseline.py` | 단일 CNN baseline 학습 및 checkpoint 저장 |
-| `07_evaluate_cnn_model.py` | test 성능, 월별 성능, mask별 성능 평가 |
-| `08_visualize_cnn_predictions.py` | 실제/예측/오차 SIC 지도 생성 |
-| `09_train_cnn_ensemble.py` | seed 또는 architecture ensemble 학습 |
-| `10_write_cnn_validation_report.py` | 약식 검증 보고서 작성 |
+| `06_validate_tos_fill_strategies.py` | `tos` 결측 처리 후보 검증 |
+| `07_train_cnn_baseline.py` | 단일 CNN baseline 학습 및 checkpoint 저장 |
+| `08_evaluate_cnn_model.py` | test 성능, 월별 성능, mask별 성능 평가 |
+| `09_visualize_cnn_predictions.py` | 실제/예측/오차 SIC 지도 생성 |
+| `10_train_cnn_ensemble.py` | seed 또는 architecture ensemble 학습 |
+| `11_write_cnn_validation_report.py` | 약식 검증 보고서 작성 |
 
 ## 15. Evaluation
 
@@ -627,7 +689,7 @@ CNN은 6개 포인트 회귀분석의 부속 평가가 아니라, 전체 격자 
   - 전처리 검증 스크립트 목적 정의
   - NaN 처리, loss mask, output activation 취약점 반영
   - CNN 모델/앙상블/보고서 구조 정의
-  - 전처리 검증 스크립트 01~05 작성
+  - 전처리 검증 스크립트 01~06 작성
 
 아직 하지 않음:
   - 터널 GPU 서버에서 전처리 검증 스크립트 실행
@@ -637,5 +699,5 @@ CNN은 6개 포인트 회귀분석의 부속 평가가 아니라, 전체 격자 
   - 검증 보고서 생성
 ```
 
-다음 작업은 터널 GPU 서버에서 전처리 검증 스크립트 01~05를 순서대로 실행해 결과 JSON/CSV를
+다음 작업은 터널 GPU 서버에서 전처리 검증 스크립트 01~06을 순서대로 실행해 결과 JSON/CSV를
 확인하는 것이다.
