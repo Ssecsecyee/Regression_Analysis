@@ -8,9 +8,14 @@ data/
 *.tif
 *.tiff
 *.pdf
+processed_data/*.csv
+processed_data/*.json
+processed_data/**/*.csv
+processed_data/**/*.json
 outputs/
 results/
 figures/
+experiments/
 
 # Python cache and local environments
 __pycache__/

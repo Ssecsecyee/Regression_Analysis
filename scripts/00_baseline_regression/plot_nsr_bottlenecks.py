@@ -7,10 +7,10 @@ from matplotlib.lines import Line2D
 import numpy as np
 
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[2]
 MASK_PATH = ROOT / "data" / "masks" / "active_mask.nc"
 LAND_MASK_PATH = ROOT / "data" / "masks" / "land_mask.nc"
-OUTPUT_PATH = ROOT / "nsr_bottlenecks_jul_oct.png"
+OUTPUT_PATH = ROOT / "experiments" / "01_baseline_linear_ridge" / "figures" / "regression" / "nsr_bottlenecks_jul_oct.png"
 
 
 POINTS = {
