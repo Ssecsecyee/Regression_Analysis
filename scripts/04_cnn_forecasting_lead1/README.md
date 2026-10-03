@@ -91,6 +91,8 @@ SIC(t+1) = SIC(t)
 02_train_cnn_lead1.py
 03_evaluate_cnn_lead1.py
 04_visualize_cnn_lead1.py
+05_evaluate_ice_binary_metrics.py
+06_visualize_2025_forecast_series.py
 ```
 
 | File | Purpose |
@@ -100,6 +102,8 @@ SIC(t+1) = SIC(t)
 | `02_train_cnn_lead1.py` | lead-1 Simple CNN 학습 및 checkpoint 저장 |
 | `03_evaluate_cnn_lead1.py` | CNN과 persistence baseline test 성능 비교 |
 | `04_visualize_cnn_lead1.py` | 실제값, CNN 예측, persistence, 오차 비교 지도 생성 |
+| `05_evaluate_ice_binary_metrics.py` | `SIC >= 0.15` 기준 ice/open-water Accuracy, Precision, Recall, F1 평가 |
+| `06_visualize_2025_forecast_series.py` | 2025년 1~12월 관측 SIC와 예측 SIC 월별 비교 그림 생성 |
 
 ## 6. Output Storage
 
@@ -126,6 +130,8 @@ python 01_prepare_lead1_dataset_index.py
 python 02_train_cnn_lead1.py --tos-strategy zero_fill
 python 03_evaluate_cnn_lead1.py --checkpoint /root/Regression_Analysis/experiments/04_cnn_forecasting_lead1/models/실험ID/best.pt
 python 04_visualize_cnn_lead1.py --checkpoint /root/Regression_Analysis/experiments/04_cnn_forecasting_lead1/models/실험ID/best.pt
+python 05_evaluate_ice_binary_metrics.py --checkpoint /root/Regression_Analysis/experiments/04_cnn_forecasting_lead1/models/실험ID/best.pt
+python 06_visualize_2025_forecast_series.py --checkpoint /root/Regression_Analysis/experiments/04_cnn_forecasting_lead1/models/실험ID/best.pt
 ```
 
 현재 `03_cnn_monthly` 결과상 `zero_fill + tos_missing mask`가 `median3x3_min3`보다 안정적이었으므로,
