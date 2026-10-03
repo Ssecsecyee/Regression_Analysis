@@ -8,6 +8,7 @@ data/
 *.tif
 *.tiff
 *.pdf
+*.zip
 processed_data/*.csv
 processed_data/*.json
 processed_data/**/*.csv
