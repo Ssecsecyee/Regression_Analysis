@@ -61,6 +61,28 @@ def draw_month_pair(actual: np.ndarray, predicted: np.ndarray, mask: np.ndarray,
     plt.close(fig)
 
 
+def draw_single_map(
+    data: np.ndarray,
+    output_path: Path,
+    title: str,
+    vmin: float,
+    vmax: float,
+    cmap: str,
+    colorbar_label: str,
+) -> None:
+    """관측, 예측, 오차 중 하나의 지도만 독립 PNG로 저장한다."""
+    fig, axis = plt.subplots(figsize=(5, 6), constrained_layout=True)
+    image = axis.imshow(data, origin="lower", vmin=vmin, vmax=vmax, cmap=cmap)
+    axis.set_title(title)
+    axis.set_xticks([])
+    axis.set_yticks([])
+    colorbar = fig.colorbar(image, ax=axis, fraction=0.046, pad=0.04)
+    colorbar.set_label(colorbar_label)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=180)
+    plt.close(fig)
+
+
 def draw_year_grid(records: list[dict], output_path: Path, title: str) -> None:
     """2025년 12개월 관측/예측을 하나의 큰 grid 그림으로 저장한다."""
     fig, axes = plt.subplots(len(records), 2, figsize=(8, 34), constrained_layout=True)
@@ -131,6 +153,40 @@ def main() -> None:
             title=f"{experiment_id} / input {meta['input_date']} -> target {meta['target_date']}",
         )
         print(f"Saved: {output_path}")
+
+        observed_path = output_dir / "observed" / f"{meta['target_date']}_observed_sic.png"
+        predicted_path = output_dir / "predicted" / f"{meta['target_date']}_predicted_sic.png"
+        error_path = output_dir / "error" / f"{meta['target_date']}_prediction_error.png"
+        draw_single_map(
+            actual_plot,
+            observed_path,
+            title=f"Observed SIC / {meta['target_date']}",
+            vmin=0.0,
+            vmax=1.0,
+            cmap="viridis",
+            colorbar_label="SIC",
+        )
+        draw_single_map(
+            prediction_plot,
+            predicted_path,
+            title=f"Predicted SIC / {meta['target_date']}",
+            vmin=0.0,
+            vmax=1.0,
+            cmap="viridis",
+            colorbar_label="SIC",
+        )
+        draw_single_map(
+            np.where(mask, prediction - actual, np.nan),
+            error_path,
+            title=f"Prediction Error / {meta['target_date']}",
+            vmin=-0.5,
+            vmax=0.5,
+            cmap="coolwarm",
+            colorbar_label="Predicted - Observed",
+        )
+        print(f"Saved: {observed_path}")
+        print(f"Saved: {predicted_path}")
+        print(f"Saved: {error_path}")
 
     grid_path = output_dir / f"observed_vs_predicted_{args.year}_all_months.png"
     draw_year_grid(
