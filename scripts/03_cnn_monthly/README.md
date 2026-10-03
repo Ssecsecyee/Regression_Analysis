@@ -533,6 +533,7 @@ cnn_torch_common.py
 09_visualize_cnn_predictions.py
 10_train_cnn_ensemble.py
 11_write_cnn_validation_report.py
+12_summarize_monthly_performance.py
 ```
 
 각 스크립트 목적은 다음과 같다.
@@ -551,6 +552,7 @@ cnn_torch_common.py
 | `09_visualize_cnn_predictions.py` | 실제/예측/오차 SIC 지도 생성 |
 | `10_train_cnn_ensemble.py` | 여러 checkpoint 예측 평균 기반 ensemble 평가 |
 | `11_write_cnn_validation_report.py` | 약식 검증 보고서 작성 |
+| `12_summarize_monthly_performance.py` | 모델별 월별 성능 요약, 그래프, 로컬 확인용 zip 생성 |
 
 ## 15. Evaluation
 
@@ -695,11 +697,12 @@ CNN은 6개 포인트 회귀분석의 부속 평가가 아니라, 전체 격자 
   - 터널 GPU 서버에서 전처리 검증 스크립트 01~06 실행 확인
   - tos 3x3 valid ocean median 보간 검증 반영
   - CNN 학습/평가/시각화/앙상블/보고서 스크립트 07~11 작성
+  - 월별 성능 요약 및 zip 패키징 스크립트 12 작성
 
 아직 하지 않음:
   - 터널 GPU 서버에서 07 학습 실행
   - checkpoint 생성
-  - 08~11 평가, 시각화, ensemble, 검증 보고서 실행
+  - 08~12 평가, 시각화, ensemble, 검증 보고서, 월별 요약 실행
 ```
 
 다음 작업은 터널 GPU 서버에서 `07_train_cnn_baseline.py`를 실행해 1차 zero-fill baseline
