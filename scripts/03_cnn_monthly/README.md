@@ -527,6 +527,7 @@ environment metadata
 04_validate_cnn_masks.py
 05_prepare_cnn_dataset_index.py
 06_validate_tos_fill_strategies.py
+cnn_torch_common.py
 07_train_cnn_baseline.py
 08_evaluate_cnn_model.py
 09_visualize_cnn_predictions.py
@@ -544,10 +545,11 @@ environment metadata
 | `04_validate_cnn_masks.py` | 학습/평가 mask 검증 |
 | `05_prepare_cnn_dataset_index.py` | CNN sample index와 split metadata 생성 |
 | `06_validate_tos_fill_strategies.py` | `tos` 결측 처리 후보 검증 |
+| `cnn_torch_common.py` | PyTorch Dataset, CNN 모델, masked loss, 평가 metric 공통 함수 |
 | `07_train_cnn_baseline.py` | 단일 CNN baseline 학습 및 checkpoint 저장 |
 | `08_evaluate_cnn_model.py` | test 성능, 월별 성능, mask별 성능 평가 |
 | `09_visualize_cnn_predictions.py` | 실제/예측/오차 SIC 지도 생성 |
-| `10_train_cnn_ensemble.py` | seed 또는 architecture ensemble 학습 |
+| `10_train_cnn_ensemble.py` | 여러 checkpoint 예측 평균 기반 ensemble 평가 |
 | `11_write_cnn_validation_report.py` | 약식 검증 보고서 작성 |
 
 ## 15. Evaluation
@@ -690,14 +692,16 @@ CNN은 6개 포인트 회귀분석의 부속 평가가 아니라, 전체 격자 
   - NaN 처리, loss mask, output activation 취약점 반영
   - CNN 모델/앙상블/보고서 구조 정의
   - 전처리 검증 스크립트 01~06 작성
+  - 터널 GPU 서버에서 전처리 검증 스크립트 01~06 실행 확인
+  - tos 3x3 valid ocean median 보간 검증 반영
+  - CNN 학습/평가/시각화/앙상블/보고서 스크립트 07~11 작성
 
 아직 하지 않음:
-  - 터널 GPU 서버에서 전처리 검증 스크립트 실행
-  - CNN Dataset 작성
-  - 모델 학습 코드 작성
+  - 터널 GPU 서버에서 07 학습 실행
   - checkpoint 생성
-  - 검증 보고서 생성
+  - 08~11 평가, 시각화, ensemble, 검증 보고서 실행
 ```
 
-다음 작업은 터널 GPU 서버에서 전처리 검증 스크립트 01~06을 순서대로 실행해 결과 JSON/CSV를
-확인하는 것이다.
+다음 작업은 터널 GPU 서버에서 `07_train_cnn_baseline.py`를 실행해 1차 zero-fill baseline
+checkpoint를 만든 뒤, 같은 split에서 `median3x3_min3` 전략을 별도 실험으로 학습해 비교하는
+것이다.
