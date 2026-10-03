@@ -534,6 +534,7 @@ cnn_torch_common.py
 10_train_cnn_ensemble.py
 11_write_cnn_validation_report.py
 12_summarize_monthly_performance.py
+13_compare_cnn_model_outputs.py
 ```
 
 각 스크립트 목적은 다음과 같다.
@@ -553,6 +554,7 @@ cnn_torch_common.py
 | `10_train_cnn_ensemble.py` | 여러 checkpoint 예측 평균 기반 ensemble 평가 |
 | `11_write_cnn_validation_report.py` | 약식 검증 보고서 작성 |
 | `12_summarize_monthly_performance.py` | 모델별 월별 성능 요약, 그래프, 로컬 확인용 zip 생성 |
+| `13_compare_cnn_model_outputs.py` | 두 모델의 같은 날짜 예측/오차/절대오차 차이 heatmap 생성 |
 
 ## 15. Evaluation
 
